@@ -1,0 +1,37 @@
+{
+  "name": "api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "db:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio",
+    "db:seed": "ts-node prisma/seed.ts"
+  },
+  "dependencies": {
+    "@weave/ast-schema": "*",
+    "@weave/shared-types": "*",
+    "@prisma/client": "^6.8.2",
+    "express": "^4.21.2",
+    "cors": "^2.8.5",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.0",
+    "dotenv": "^16.5.0",
+    "express-validator": "^7.2.1",
+    "nanoid": "^5.1.5",
+    "zod": "^3.25.56"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/express": "^5.0.3",
+    "@types/cors": "^2.8.17",
+    "@types/morgan": "^1.9.9",
+    "@types/node": "^22.15.3",
+    "prisma": "^6.8.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "5.9.2"
+  }
+}

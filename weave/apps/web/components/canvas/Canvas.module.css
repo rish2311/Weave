@@ -1,0 +1,80 @@
+.canvasWrapper {
+  flex: 1;
+  overflow: hidden;
+  background: var(--canvas-bg);
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+  position: relative;
+  cursor: default;
+}
+
+.canvasOver {
+  background-color: rgba(99, 102, 241, 0.03);
+}
+
+.canvasTransform {
+  position: absolute;
+  top: 60px;
+  left: 60px;
+  will-change: transform;
+}
+
+.deviceFrame {
+  background: #ffffff;
+  position: relative;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 20px 60px rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
+  min-height: 600px;
+}
+
+.emptyState {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.emptyIcon {
+  font-size: 40px;
+  opacity: 0.3;
+}
+
+.emptyTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #888;
+}
+
+.emptyHint {
+  font-size: 13px;
+  color: #aaa;
+}
+
+.canvasInfo {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: rgba(19, 19, 26, 0.85);
+  border: 1px solid var(--border-default);
+  border-radius: 100px;
+  font-size: 11px;
+  color: var(--text-muted);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+.infoSep {
+  color: var(--border-default);
+}
