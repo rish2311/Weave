@@ -3,8 +3,6 @@
 > **Design. Build. Ship.**
 > An AI-native Visual Application IDE that generates production-grade React/Next.js applications with full code ownership.
 
-![Weave Overview](https://img.shields.io/badge/Status-In%20Development-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue) ![Next.js](https://img.shields.io/badge/Next.js-App%20Router-black)
-
 ## 📖 Overview
 
 **Weave** is not just another website builder. It is a comprehensive **Visual Application Operating System** that bridges the gap between design (Figma), development (React/Next.js), and deployment (Vercel). 
@@ -55,36 +53,6 @@ weave/
 │   ├── shared-types/       # Global TS interfaces
 │   └── ui/                 # Reusable UI library (Design System)
 ```
-
----
-
-## 🗺️ Implementation Roadmap
-
-### Phase 1: Core Foundation & Canvas Engine (MVP 1)
-- Turborepo setup and CI/CD pipelines.
-- **AST Schema definition:** The unified JSON structure representing application state.
-- **Editor Core:** Canvas wrapper, infinite panning, and DnD logic.
-- Component Registry and dynamic Properties Panel (two-way binding).
-
-### Phase 2: Production Readiness & Code Export (MVP 2)
-- Responsive design engine (breakpoints).
-- **Code Generator Pipeline:** AST-to-React compiler and Tailwind utility mapper.
-- **Export System:** "Download Code" to generate a zipped Next.js boilerplate.
-
-### Phase 3: AI-Native Integration (MVP 3)
-- AI Service architecture interfacing with OpenAI/Anthropic.
-- "Prompt to Section" functionality mapped directly to the AST.
-- AI Refactoring tool (image/old HTML to Weave AST).
-
-### Phase 4: Multiplayer Collaboration (MVP 4)
-- **Yjs Integration:** Real-time canvas synchronization, live cursors, and presence.
-- Git-like versioning ("Time Machine") with append-only event sourcing.
-- Marketplace for components, templates, and workflows.
-
-### Phase 5: Visual Backend Builder (MVP 5)
-- Visual database schema designer and migration engine.
-- Visual API & Workflow builder.
-- Full-stack code export and one-click Vercel/AWS deployment.
 
 ---
 
