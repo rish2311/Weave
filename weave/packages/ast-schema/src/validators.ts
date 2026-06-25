@@ -26,6 +26,18 @@ export function isBoxNode(node: WeaveNode): node is Extract<WeaveNode, { type: "
   return node.type === "BOX";
 }
 
+export function isLinkNode(node: WeaveNode): node is Extract<WeaveNode, { type: "LINK" }> {
+  return node.type === "LINK";
+}
+
+export function isInputNode(node: WeaveNode): node is Extract<WeaveNode, { type: "INPUT" }> {
+  return node.type === "INPUT";
+}
+
+export function isDividerNode(node: WeaveNode): node is Extract<WeaveNode, { type: "DIVIDER" }> {
+  return node.type === "DIVIDER";
+}
+
 // ---------------------------------------------------------------------------
 // Schema validators
 // ---------------------------------------------------------------------------
@@ -75,7 +87,9 @@ export function validateProject(project: unknown): project is WeaveProject {
   if (typeof project !== "object" || project === null) return false;
   const p = project as Record<string, unknown>;
   return (
-    p["schemaVersion"] === "1.0.0" &&
+    // Accept any semver string — guards against future version bumps breaking loads
+    typeof p["schemaVersion"] === "string" &&
+    /^\d+\.\d+\.\d+$/.test(p["schemaVersion"] as string) &&
     typeof p["id"] === "string" &&
     typeof p["name"] === "string" &&
     typeof p["nodes"] === "object" &&

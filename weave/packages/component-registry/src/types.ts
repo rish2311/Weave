@@ -11,7 +11,7 @@ export type PropertyControl =
   | { type: "select"; label: string; propKey: string; options: Array<{ label: string; value: string }> }
   | { type: "boolean"; label: string; propKey: string }
   | { type: "image"; label: string; propKey: string }
-  | { type: "textarea"; label: string; propKey: string };
+  | { type: "textarea"; label: string; propKey: string; placeholder?: string };
 
 export type StyleControl =
   | { type: "spacing"; label: string; styleKey: "padding" | "margin" }

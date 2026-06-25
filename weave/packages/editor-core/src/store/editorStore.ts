@@ -60,6 +60,19 @@ export interface EditorStore extends EditorState {
   deletePage: (id: string) => void;
   setActivePage: (id: string) => void;
   renamePage: (id: string, name: string) => void;
+
+  // --- AI / Template injection (Phase 3) ---
+  /**
+   * Merges a flat array of WeaveNodes into the project.
+   * Root nodes (parentId === null in the input) are attached to
+   * `targetParentId` if provided, otherwise to the active page root.
+   * All node IDs are re-keyed with a prefix to prevent collisions.
+   */
+  injectASTSnippet: (
+    nodes: WeaveNode[],
+    rootIds: string[],
+    targetParentId?: string | null
+  ) => string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -70,6 +83,48 @@ function getDescendantIds(nodes: Record<string, WeaveNode>, id: string): string[
   const node = nodes[id];
   if (!node) return [];
   return node.childIds.flatMap((childId) => [childId, ...getDescendantIds(nodes, childId)]);
+}
+
+/**
+ * Deep-clones a node subtree, returning a map of { newId -> clonedNode }
+ * and the new root ID. All IDs are re-keyed so there are no collisions.
+ */
+function deepCloneSubtree(
+  nodes: Record<string, WeaveNode>,
+  rootId: string,
+  newParentId: string | null,
+  now: string
+): { cloned: Record<string, WeaveNode>; newRootId: string } {
+  const idMap = new Map<string, string>();
+
+  // First pass: generate new IDs for all nodes in the subtree
+  const allIds = [rootId, ...getDescendantIds(nodes, rootId)];
+  allIds.forEach((id) => idMap.set(id, nanoid(10)));
+
+  const cloned: Record<string, WeaveNode> = {};
+
+  // Second pass: clone each node with remapped IDs
+  for (const oldId of allIds) {
+    const node = nodes[oldId];
+    if (!node) continue;
+    const newId = idMap.get(oldId)!;
+    const resolvedParentId =
+      oldId === rootId
+        ? newParentId
+        : (node.parentId ? (idMap.get(node.parentId) ?? node.parentId) : null);
+
+    cloned[newId] = {
+      ...JSON.parse(JSON.stringify(node)) as WeaveNode,
+      id: newId,
+      parentId: resolvedParentId,
+      childIds: node.childIds.map((c) => idMap.get(c) ?? c),
+      name: oldId === rootId ? `${node.name} (copy)` : node.name,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
+  return { cloned, newRootId: idMap.get(rootId)! };
 }
 
 // ---------------------------------------------------------------------------
@@ -180,41 +235,40 @@ export const useEditorStore = create<EditorStore>()(
       const original = project.nodes[id];
       if (!original) return null;
 
-      const newId = nanoid(10);
       const now = new Date().toISOString();
-      const duplicate: WeaveNode = {
-        ...original,
-        id: newId,
-        name: `${original.name} (copy)`,
-        childIds: [], // Children are not deep-duplicated here (shallow)
-        createdAt: now,
-        updatedAt: now,
-      } as WeaveNode;
+      // Deep-clone the full subtree (fixes: children were silently dropped)
+      const { cloned, newRootId } = deepCloneSubtree(
+        project.nodes,
+        id,
+        original.parentId,
+        now
+      );
 
       set((state) => {
         if (!state.project) return;
-        state.project.nodes[newId] = duplicate;
+        // Merge all cloned nodes
+        Object.assign(state.project.nodes, cloned);
 
         if (original.parentId) {
           const parent = state.project.nodes[original.parentId];
           if (parent) {
             const idx = parent.childIds.indexOf(id);
-            parent.childIds.splice(idx + 1, 0, newId);
+            parent.childIds.splice(idx + 1, 0, newRootId);
           }
         } else {
           const page = state.project.pages.find((p) => p.id === state.project!.activePageId);
           if (page) {
             const idx = page.rootNodeIds.indexOf(id);
-            page.rootNodeIds.splice(idx + 1, 0, newId);
+            page.rootNodeIds.splice(idx + 1, 0, newRootId);
           }
         }
 
-        state.selection = { selectedIds: [newId], primaryId: newId };
-        state.project.updatedAt = new Date().toISOString();
+        state.selection = { selectedIds: [newRootId], primaryId: newRootId };
+        state.project.updatedAt = now;
         state.isModified = true;
       });
 
-      return newId;
+      return newRootId;
     },
 
     // -----------------------------------------------------------------------
@@ -426,5 +480,72 @@ export const useEditorStore = create<EditorStore>()(
           state.isModified = true;
         }
       }),
+
+    // -----------------------------------------------------------------------
+    // AI / Template injection (Phase 3)
+    // -----------------------------------------------------------------------
+    injectASTSnippet: (nodes, rootIds, targetParentId) => {
+      const { project } = get();
+      if (!project) return [];
+
+      // Build an ID remapping table so we never collide with existing nodes
+      const prefix = nanoid(4);
+      const idMap = new Map<string, string>();
+      nodes.forEach((n) => idMap.set(n.id, `${prefix}_${n.id}`));
+
+      const now = new Date().toISOString();
+      const newRootIds: string[] = [];
+
+      set((state) => {
+        if (!state.project) return;
+
+        // 1. Insert all remapped nodes into the flat store
+        for (const n of nodes) {
+          const newId = idMap.get(n.id) ?? n.id;
+          const newParentId = n.parentId ? (idMap.get(n.parentId) ?? n.parentId) : null;
+          const newChildIds = n.childIds.map((c) => idMap.get(c) ?? c);
+
+          state.project.nodes[newId] = {
+            ...n,
+            id: newId,
+            parentId: newParentId,
+            childIds: newChildIds,
+            createdAt: now,
+            updatedAt: now,
+          } as WeaveNode;
+        }
+
+        // 2. Wire root nodes into the target parent or active page
+        const remappedRootIds = rootIds.map((id) => idMap.get(id) ?? id);
+        newRootIds.push(...remappedRootIds);
+
+        if (targetParentId && state.project.nodes[targetParentId]) {
+          // Attach under a specific node
+          state.project.nodes[targetParentId]!.childIds.push(...remappedRootIds);
+          remappedRootIds.forEach((id) => {
+            if (state.project!.nodes[id]) {
+              state.project!.nodes[id]!.parentId = targetParentId;
+            }
+          });
+        } else {
+          // Attach to active page root
+          const page = state.project.pages.find((p) => p.id === state.project!.activePageId);
+          if (page) page.rootNodeIds.push(...remappedRootIds);
+        }
+
+        state.project.updatedAt = now;
+        state.isModified = true;
+
+        // 3. Select the first injected root node
+        if (remappedRootIds.length > 0) {
+          state.selection = {
+            selectedIds: remappedRootIds,
+            primaryId: remappedRootIds[0] ?? null,
+          };
+        }
+      });
+
+      return newRootIds;
+    },
   }))
 );

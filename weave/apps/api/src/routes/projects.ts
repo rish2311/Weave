@@ -1,10 +1,9 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { PrismaClient } from "@prisma/client";
 import { validateProject } from "@weave/ast-schema";
 import { nanoid } from "nanoid";
+import { prisma } from "../lib/prisma";
 
-const prisma = new PrismaClient();
 export const projectRouter = Router();
 
 // ---------------------------------------------------------------------------

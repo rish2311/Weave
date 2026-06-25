@@ -207,7 +207,7 @@ export function createProject(name: string): WeaveProject {
   const defaultPage = createPage("Home");
 
   return {
-    schemaVersion: "1.0.0",
+    schemaVersion: "2.0.0",
     id: nanoid(10),
     name,
     nodes: {},

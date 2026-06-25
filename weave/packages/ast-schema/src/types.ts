@@ -3,9 +3,10 @@
 // This is the single source of truth that drives:
 //   - Visual Canvas rendering
 //   - Properties Panel binding
-//   - Code generation
-//   - AI manipulation
-//   - Version control
+//   - Code generation (Phase 2)
+//   - AI manipulation (Phase 3)
+//   - Version control (Phase 4)
+// Schema: 2.0.0 — Added responsive breakpoint styles
 // =============================================================================
 
 // ---------------------------------------------------------------------------
@@ -135,7 +136,26 @@ export interface WeaveStyles {
   transform?: string;
   transition?: string;
   cursor?: string;
+
+  // Responsive overrides keyed by breakpoint
+  // Applied as inline style overrides at the given breakpoint
+  responsive?: Partial<Record<WeaveBreakpoint, Omit<WeaveStyles, "responsive">>>;
 }
+
+// ---------------------------------------------------------------------------
+// Responsive breakpoints (2.1)
+// ---------------------------------------------------------------------------
+
+/** Breakpoints mirror Tailwind's default scale */
+export type WeaveBreakpoint = "sm" | "md" | "lg" | "xl" | "2xl";
+
+export const BREAKPOINT_WIDTHS: Record<WeaveBreakpoint, number> = {
+  sm: 640,
+  md: 768,
+  lg: 1024,
+  xl: 1280,
+  "2xl": 1536,
+};
 
 // ---------------------------------------------------------------------------
 // AST Node Types
@@ -189,6 +209,7 @@ export interface WeaveNodeBase {
 export interface TextNodeProps {
   content: string;
   htmlContent?: string;
+  [key: string]: unknown;
 }
 
 export interface ButtonNodeProps {
@@ -199,12 +220,14 @@ export interface ButtonNodeProps {
   target?: "_blank" | "_self";
   disabled?: boolean;
   loading?: boolean;
+  [key: string]: unknown;
 }
 
 export interface ImageNodeProps {
   src: string;
   alt: string;
   objectFit?: "cover" | "contain" | "fill" | "none" | "scale-down";
+  [key: string]: unknown;
 }
 
 export interface InputNodeProps {
@@ -213,12 +236,14 @@ export interface InputNodeProps {
   label?: string;
   required?: boolean;
   disabled?: boolean;
+  [key: string]: unknown;
 }
 
 export interface LinkNodeProps {
   href: string;
   target?: "_blank" | "_self";
   rel?: string;
+  [key: string]: unknown;
 }
 
 // ---------------------------------------------------------------------------
@@ -301,7 +326,7 @@ export interface WeavePage {
 
 export interface WeaveProject {
   /** Schema version for forward compatibility */
-  schemaVersion: "1.0.0";
+  schemaVersion: "1.0.0" | "2.0.0";
   id: string;
   name: string;
   /** Flat map of all nodes keyed by ID (normalized, O(1) access) */
@@ -312,6 +337,8 @@ export interface WeaveProject {
   activePageId: string;
   /** Design tokens / global variables */
   designTokens: WeaveDesignTokens;
+  /** Active breakpoint being edited in the canvas */
+  activeBreakpoint?: WeaveBreakpoint;
   createdAt: string;
   updatedAt: string;
 }

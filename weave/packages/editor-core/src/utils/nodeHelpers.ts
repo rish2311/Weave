@@ -68,7 +68,7 @@ export function getAllDescendants(
   });
 }
 
-/** Check if a node can accept children */
+/** Check if a node can accept children (must match registry canHaveChildren) */
 export function canAcceptChildren(node: WeaveNode): boolean {
-  return ["BOX", "CONTAINER"].includes(node.type);
+  return ["BOX", "CONTAINER", "LINK"].includes(node.type);
 }

@@ -4,11 +4,14 @@ const nextConfig = {
     "@weave/ast-schema",
     "@weave/editor-core",
     "@weave/component-registry",
+    "@weave/code-generator",
     "@weave/shared-types",
   ],
   async rewrites() {
     return [
       {
+        // Proxy only the backend Express API (projects, auth, etc.)
+        // /api/ai/* routes are handled by Next.js itself (Route Handlers)
         source: "/api/v1/:path*",
         destination: `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/api/v1/:path*`,
       },

@@ -1,17 +1,34 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import styles from "./Toolbar.module.css";
 import { useEditorStore } from "@weave/editor-core";
 import { useCanvasStore } from "@weave/editor-core";
 import { useHistoryStore } from "@weave/editor-core";
 import Link from "next/link";
+import { ExportModal } from "./ExportModal";
+import { AIPromptBar } from "../ai/AIPromptBar";
 
 export function Toolbar() {
   const project = useEditorStore((s) => s.project);
   const isModified = useEditorStore((s) => s.isModified);
-  const { viewport, zoomIn, zoomOut, zoomToFit, setDevice } = useCanvasStore();
+  const { viewport, device, zoomIn, zoomOut, zoomToFit, setDevice } = useCanvasStore();
   const { canUndo, canRedo, undo, redo } = useHistoryStore();
   const loadProject = useEditorStore((s) => s.loadProject);
+  const [showExport, setShowExport] = useState(false);
+  const [showAI, setShowAI] = useState(false);
+
+  // Global Cmd+K / Ctrl+K shortcut to open AI prompt bar
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setShowAI((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   function handleUndo() {
     const snap = undo();
@@ -25,111 +42,144 @@ export function Toolbar() {
 
   const zoomPct = Math.round(viewport.zoom * 100);
 
+  // Responsive breakpoint label shown next to device icon
+  const deviceLabel =
+    device.preset === "desktop" ? "Desktop" :
+    device.preset === "tablet" ? "Tablet" :
+    device.preset === "mobile" ? "Mobile" : "Custom";
+
   return (
-    <header className={styles.toolbar}>
-      {/* Left: Logo + project name */}
-      <div className={styles.left}>
-        <Link href="/" className={styles.logo} id="toolbar-logo">
-          <span className={styles.logoMark}>W</span>
-          <span className={styles.logoText}>Weave</span>
-        </Link>
-        <div className={styles.divider} />
-        <span className={styles.projectName}>
-          {project?.name ?? "Untitled"}
-          {isModified && <span className={styles.unsaved}>•</span>}
-        </span>
-      </div>
-
-      {/* Center: Device presets + Zoom */}
-      <div className={styles.center}>
-        <div className={styles.deviceGroup}>
-          <button
-            id="device-desktop"
-            className={styles.deviceBtn}
-            title="Desktop (1440px)"
-            onClick={() => setDevice("desktop")}
-          >
-            🖥
-          </button>
-          <button
-            id="device-tablet"
-            className={styles.deviceBtn}
-            title="Tablet (768px)"
-            onClick={() => setDevice("tablet")}
-          >
-            📱
-          </button>
-          <button
-            id="device-mobile"
-            className={styles.deviceBtn}
-            title="Mobile (390px)"
-            onClick={() => setDevice("mobile")}
-          >
-            📲
-          </button>
+    <>
+      <header className={styles.toolbar}>
+        {/* Left: Logo + project name */}
+        <div className={styles.left}>
+          <Link href="/" className={styles.logo} id="toolbar-logo">
+            <span className={styles.logoMark}>W</span>
+            <span className={styles.logoText}>Weave</span>
+          </Link>
+          <div className={styles.divider} />
+          <span className={styles.projectName}>
+            {project?.name ?? "Untitled"}
+            {isModified && <span className={styles.unsaved}>•</span>}
+          </span>
         </div>
 
-        <div className={styles.divider} />
+        {/* Center: Device presets (responsive controls) + Zoom + AI */}
+        <div className={styles.center}>
+          {/* AI Generate Button — primary Phase 3 entry point */}
+          <button
+            id="ai-generate-trigger"
+            className={styles.aiBtn}
+            onClick={() => setShowAI(true)}
+            title="AI Generate (⌘K)"
+          >
+            ✨ AI Generate
+          </button>
 
-        <div className={styles.zoomControls}>
+          <div className={styles.divider} />
+
+          <div className={styles.deviceGroup}>
+            <button
+              id="device-desktop"
+              className={`${styles.deviceBtn} ${device.preset === "desktop" ? styles.deviceBtnActive : ""}`}
+              title="Desktop (1440px)"
+              onClick={() => setDevice("desktop")}
+            >
+              🖥
+            </button>
+            <button
+              id="device-tablet"
+              className={`${styles.deviceBtn} ${device.preset === "tablet" ? styles.deviceBtnActive : ""}`}
+              title="Tablet (768px)"
+              onClick={() => setDevice("tablet")}
+            >
+              📱
+            </button>
+            <button
+              id="device-mobile"
+              className={`${styles.deviceBtn} ${device.preset === "mobile" ? styles.deviceBtnActive : ""}`}
+              title="Mobile (390px)"
+              onClick={() => setDevice("mobile")}
+            >
+              📲
+            </button>
+            <span className={styles.deviceLabel}>{deviceLabel} · {device.width}px</span>
+          </div>
+
+          <div className={styles.divider} />
+
+          <div className={styles.zoomControls}>
+            <button
+              id="zoom-out"
+              className={styles.iconBtn}
+              onClick={zoomOut}
+              title="Zoom out"
+            >
+              −
+            </button>
+            <button
+              id="zoom-reset"
+              className={styles.zoomLabel}
+              onClick={zoomToFit}
+              title="Reset zoom"
+            >
+              {zoomPct}%
+            </button>
+            <button
+              id="zoom-in"
+              className={styles.iconBtn}
+              onClick={zoomIn}
+              title="Zoom in"
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        {/* Right: Undo/Redo + Save + Export */}
+        <div className={styles.right}>
+          <div className={styles.historyGroup}>
+            <button
+              id="undo"
+              className={styles.iconBtn}
+              onClick={handleUndo}
+              disabled={!canUndo()}
+              title="Undo (⌘Z)"
+            >
+              ↩
+            </button>
+            <button
+              id="redo"
+              className={styles.iconBtn}
+              onClick={handleRedo}
+              disabled={!canRedo()}
+              title="Redo (⌘⇧Z)"
+            >
+              ↪
+            </button>
+          </div>
+
           <button
-            id="zoom-out"
-            className={styles.iconBtn}
-            onClick={zoomOut}
-            title="Zoom out"
+            id="save-project"
+            className={`${styles.saveBtn} ${isModified ? styles.saveBtnActive : ""}`}
+            title="Save project"
           >
-            −
+            {isModified ? "Save" : "Saved ✓"}
           </button>
+
           <button
-            id="zoom-reset"
-            className={styles.zoomLabel}
-            onClick={zoomToFit}
-            title="Reset zoom"
+            id="export-code-btn"
+            className={styles.exportBtn}
+            onClick={() => setShowExport(true)}
+            title="Export production-ready Next.js code"
           >
-            {zoomPct}%
-          </button>
-          <button
-            id="zoom-in"
-            className={styles.iconBtn}
-            onClick={zoomIn}
-            title="Zoom in"
-          >
-            +
+            ↗ Export
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* Right: Undo/Redo + Save */}
-      <div className={styles.right}>
-        <div className={styles.historyGroup}>
-          <button
-            id="undo"
-            className={styles.iconBtn}
-            onClick={handleUndo}
-            disabled={!canUndo()}
-            title="Undo (⌘Z)"
-          >
-            ↩
-          </button>
-          <button
-            id="redo"
-            className={styles.iconBtn}
-            onClick={handleRedo}
-            disabled={!canRedo()}
-            title="Redo (⌘⇧Z)"
-          >
-            ↪
-          </button>
-        </div>
-
-        <button
-          id="save-project"
-          className={`${styles.saveBtn} ${isModified ? styles.saveBtnActive : ""}`}
-          title="Save project"
-        >
-          {isModified ? "Save" : "Saved ✓"}
-        </button>
-      </div>
-    </header>
+      {showExport && <ExportModal onClose={() => setShowExport(false)} />}
+      {showAI && <AIPromptBar onClose={() => setShowAI(false)} />}
+    </>
   );
 }

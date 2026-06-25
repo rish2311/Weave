@@ -43,14 +43,16 @@ export function Canvas() {
     isPanning.current = false;
   }, []);
 
-  // Zoom with Ctrl+Wheel
+  // Zoom with Ctrl+Wheel — read current zoom from store to avoid stale closure
   const onWheel = useCallback((e: React.WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
       const delta = e.deltaY < 0 ? 0.1 : -0.1;
-      setZoom(viewport.zoom + delta);
+      // useCanvasStore.getState() gives us the live value without creating a dep
+      const currentZoom = useCanvasStore.getState().viewport.zoom;
+      setZoom(currentZoom + delta);
     }
-  }, [viewport.zoom, setZoom]);
+  }, [setZoom]);
 
   return (
     <div
